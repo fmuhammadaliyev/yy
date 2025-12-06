@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="uz">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Full-page Screenshot</title>
+    <style>
+      body {
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        background: #f7f7f8;
+        margin: 0;
+      }
+      .card {
+        width: 560px;
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+      }
+      input[type="url"] {
+        width: 100%;
+        padding: 10px 12px;
+        font-size: 16px;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        box-sizing: border-box;
+      }
+      button {
+        margin-top: 12px;
+        width: 100%;
+        padding: 10px 12px;
+        font-size: 16px;
+        border-radius: 8px;
+        border: 0;
+        background: #0066ff;
+        color: white;
+        cursor: pointer;
+      }
+      .note {
+        margin-top: 10px;
+        color: #555;
+        font-size: 14px;
+      }
+      .link {
+        margin-top: 12px;
+        display: block;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h2>Full-page screenshot</h2>
+      <p>
+        URL kiriting va <strong>Take screenshot</strong> tugmasini bosing —
+        saytning toʻliq (header→footer) rasm fayli yuklanadi.
+      </p>
+
+      <input
+        id="urlInput"
+        type="url"
+        placeholder="https://example.com"
+        value="https://example.com"
+      />
+      <button id="btn">Take screenshot</button>
+
+      <div class="note" id="status">Hech nima amalga oshirilmadi.</div>
+      <a id="downloadLink" class="link" style="display: none"
+        >Download screenshot</a
+      >
+    </div>
+
+    <script>
+      const btn = document.getElementById("btn");
+      const urlInput = document.getElementById("urlInput");
+      const status = document.getElementById("status");
+      const dl = document.getElementById("downloadLink");
+
+      btn.addEventListener("click", async () => {
+        const url = urlInput.value.trim();
+        if (!url) return alert("Iltimos URL kiriting.");
+
+        // Basic client-side URL check
+        try {
+          const u = new URL(url);
+          if (u.protocol !== "http:" && u.protocol !== "https:")
+            throw "Invalid protocol";
+        } catch (e) {
+          return alert("Iltimos toʻgʻri http/https URL kiriting.");
+        }
+
+        status.textContent = "Sahifa yuklanmoqda va screenshot olinmoqda...";
+        dl.style.display = "none";
+        btn.disabled = true;
+
+        try {
+          const resp = await fetch("/screenshot", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ url }),
+          });
+
+          if (!resp.ok) {
+            const error = await resp
+              .json()
+              .catch(() => ({ error: "Server javobida xato" }));
+            throw new Error(error.error || resp.statusText || "Server error");
+          }
+
+          const blob = await resp.blob();
+          const blobUrl = URL.createObjectURL(blob);
+
+          // Create a temporary download link and click it to trigger download
+          const a = document.createElement("a");
+          a.href = blobUrl;
+          a.download = "screenshot.png";
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+
+          // also expose link in UI
+          dl.href = blobUrl;
+          dl.textContent = "Agar yuklanmasa bu yerdan yuklab oling";
+          dl.style.display = "block";
+
+          status.textContent = "Tugadi — screenshot fayli yuklandi.";
+        } catch (err) {
+          console.error(err);
+          status.textContent = "Xato: " + (err.message || err);
+          alert("Screenshot olishda xato: " + (err.message || err));
+        } finally {
+          btn.disabled = false;
+        }
+      });
+    </script>
+  </body>
+</html>
