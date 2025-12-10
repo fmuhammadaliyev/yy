@@ -1,5 +1,10 @@
 {
   "dependencies": {
-    "express": "^5.2.1"
+    "cors": "^2.8.5",
+    "express": "^5.2.1",
+    "puppeteer": "^24.32.1"
+  },
+  "scripts": {
+    "dev": "node app.cjs"
   }
 }
