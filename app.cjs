@@ -7,28 +7,31 @@ const port = 3000;
 app.use(express.json());
 app.use(cors());
 
-app.post("/url", (req, res) => {
-  init(req.body.html).then((result) => {
-    res.send(result);
-  });
-});
+app.post("/url", async (req, res) => {
+  const { html, css } = req.body;
 
-async function init(html) {
   const browser = await puppeteer.launch();
   const page = await browser.newPage();
 
-  await page.setContent(html, {
-    waitUntil: "networkidle2",
-  });
+  const finalHTML = `
+    <html>
+      <head>
+        <style>
+          ${css}
+        </style>
+      </head>
+      <body>
+        ${html}
+      </body>
+    </html>
+  `;
 
-  return await page.pdf({
-    format: "A4",
-  });
+  await page.setContent(finalHTML, { waitUntil: "networkidle2" });
 
-  // Navigate the page to a URL.
-  await page.goto(url);
-}
+  const pdf = await page.pdf({ format: "A4" });
 
-app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`);
+  await browser.close();
+
+  res.setHeader("Content-Type", "application/pdf");
+  res.send(pdf);
 });
