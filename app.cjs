@@ -1,32 +1,32 @@
 const express = require("express");
 const puppeteer = require("puppeteer");
+const cors = require("cors");
 const app = express();
 const port = 3000;
 
 app.use(express.json());
-
-const arr = [
-  { id: 1, name: "salom" },
-  { id: 1, name: "salom" },
-  { id: 1, name: "salom" },
-  { id: 1, name: "salom" },
-];
+app.use(cors());
 
 app.post("/url", (req, res) => {
-  init(req.body.url).then((result) => {
+  init(req.body.html).then((result) => {
     res.send(result);
   });
 });
 
-async function init(url) {
+async function init(html) {
   const browser = await puppeteer.launch();
   const page = await browser.newPage();
 
+  await page.setContent(html, {
+    waitUntil: "networkidle2",
+  });
+
+  return await page.pdf({
+    format: "A4",
+  });
+
   // Navigate the page to a URL.
   await page.goto(url);
-  await page.waitForSelector("h1");
-  const h1 = await page.$eval("h1", (el) => el.innerText);
-  return h1;
 }
 
 app.listen(port, () => {
